@@ -1,0 +1,596 @@
+%
+% File emnlp2018.tex
+%
+%% Based on the style files for EMNLP 2018, which were
+%% Based on the style files for ACL 2018, which were
+%% Based on the style files for ACL-2015, with some improvements
+%%  taken from the NAACL-2016 style
+%% Based on the style files for ACL-2014, which were, in turn,
+%% based on ACL-2013, ACL-2012, ACL-2011, ACL-2010, ACL-IJCNLP-2009,
+%% EACL-2009, IJCNLP-2008...
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[hyperref]{emnlp2018}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{latexsym}
+\usepackage{array}
+\usepackage{ccaption} 
+\usepackage{wrapfig}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{colordvi}  
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{epstopdf}
+\usepackage{relsize}
+\usepackage{url}
+
+
+
+\aclfinalcopy % Uncomment this line for the final submission
+
+%\setlength\titlebox{5cm}
+% You can expand the titlebox if you need extra space
+% to show all the authors. Please do not make the titlebox
+% smaller than 5cm (the original size); we will check this
+% in the camera-ready version and ask you to change it back.
+
+\newcommand\BibTeX{B{\sc ib}\TeX}
+\newcommand\confname{EMNLP 2018}
+\newcommand\conforg{SIGDAT}
+
+\title{BLEU is Not Suitable for the Evaluation of Text Simplification}
+
+\author{Elior Sulem, Omri Abend, Ari Rappoport \\
+% Affiliation / Address line 1 \\
+ % Affiliation / Address line 2 \\
+ % Affiliation / Address line 3 \\
+ Department of Computer Science, The Hebrew University of Jerusalem\\
+{\tt \{eliors|oabend|arir\}@cs.huji.ac.il}
+ % Affiliation / Address line 1 \\
+ % Affiliation / Address line 2 \\
+  %Affiliation / Address line 3 \\
+ % {\tt email@domain} \\}
+ }
+
+\date{}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  
+  BLEU is widely considered to be an informative
+  metric for text-to-text generation, including Text Simplification (TS).
+  %BLEU is widely considered to be an informative metric for text-to-text generation in general and for Text Simplification (TS) in particular.
+  TS includes both lexical and structural aspects.
+  In this paper we show that BLEU is not suitable for the evaluation of sentence splitting, the major
+  structural simplification operation. We manually compiled a sentence splitting gold standard corpus
+  containing multiple structural paraphrases, and performed a correlation analysis with human judgments.\footnote{The corpus can be found in \url{https://github.com/eliorsulem/HSplit-corpus}}
+  We find low or no correlation between BLEU and the grammaticality and meaning preservation parameters
+  where sentence splitting is involved. Moreover, BLEU often negatively correlates with
+  simplicity, essentially penalizing simpler sentences.
+% These findings support the need for using structure-aware metrics for structural simplification.
+% Our results may also be relevant for the evaluation of Machine Translation, where 
+% splitting is sometimes performed.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\vspace{-0.3cm}
+\section{Introduction} \label{sec:introduction}
+
+BLEU \citep{P02} is an $n$-gram-based evaluation metric, widely used for Machine Translation (MT) evaluation. BLEU has also been 
+applied to monolingual translation tasks, such as grammatical error correction \citep{PL11}, summarization \citep{G15} and text simplification \citep{NG14,Sa15,Xu16}, i.e.
+the rewriting of a sentence as one or more simpler sentences.
+
+%It is a useful preprocessing step for several%NLP tasks, such as machine translation \citep{SP16} and relation extraction \citep{N16}, and has also
+%been shown useful in the development of reading aids, e.g., for people with aphasia \citep{C99} or non-native speakers \citep{S02}. 
+
+Along with the application of parallel corpora and MT techniques for TS \citep[e.g.,][]{Z10,W12,NG14},
+BLEU became the main automatic metric for TS,
+despite its deficiencies (see \S\ref{sec:related_work}).
+%\citet{NG14} pointed out that BLEU is deficient for TS in considering only the similarity of the
+%output to the reference, and not the dissimilarity to the original sentence.
+Indeed, focusing on lexical simplification, \citet{Xu16} argued that BLEU
+gives high scores to sentences that are close or even identical to the input,
+especially when multiple references are used.
+In their experiments, BLEU failed to predict simplicity,
+but obtained a higher correlation with grammaticality and meaning preservation,
+relative to the SARI metric they proposed.
+
+%\citet{Xu16}, focusing on lexical simplification, first proposed a metric tailored for text simplification, namely SARI, which is well correlated with the human evaluation of simplicity at the lexical level. Differently, BLEU obtained low correlation scores for the simplicity parameter in these experiments. On the other hand, they showed that BLEU, in particular when it is used with multiple references, is highly correlated with human judgments ratings of grammaticality and meaning preservation.  
+
+In this paper, we further explore the applicability of BLEU for TS evaluation, examining BLEU's
+informativeness where sentence splitting is involved.
+Sentence splitting, namely the rewriting of a single sentence as multiple sentences while preserving its meaning, is the main structural simplification operation. It has been shown useful for MT preprocessing \citep{C96,M14,LN15} and human comprehension \citep{MK79,W03}, independently from other lexical and structural simplification operations.
+Sentence splitting is performed by many TS systems \citep{Z10,WL11,SA14,NG14,NG16}.
+For example, 63$\%$ and 80$\%$ of the test sentences are split by the systems of \citet{WL11} and \citet{Z10}, respectively \citep{NG16}.
+Sentence splitting is also the focus of the recently proposed Split-and Rephrase sub-task \citep{N17,AG18}, in which the automatic metric used is BLEU.
+
+For exploring the effect of sentence splitting on BLEU scores, we compile a human-generated
+gold standard sentence splitting corpus -- HSplit,
+which will also be useful for future studies of splitting in TS,
+and perform correlation analyses with human judgments.
+We consider two reference sets. First, we experiment with the most common set, proposed by \citet{Xu16}, evaluating
+a variety of system outputs, as well as HSplit.
+The references in this setting explicitly emphasize lexical operations, 
+and do not contain splitting or content deletion.\footnote{Nevertheless, they are also used in contexts where structural operations are involved \citep{Ni17,S18acl}.}
+Second, we experiment with HSplit as the reference set, evaluating systems that focus on sentence splitting.
+The first setting allows assessing whether BLEU with the standard reference set is a reliable metric on systems that perform splitting.
+The second allows assessing whether BLEU can be adapted to evaluate splitting, given a reference set so oriented.
+
+%This setting allows us to examine to which extent BLEU can be considered a meaning preservation predictor
+%in a context where multiple simplification operations are performed.
+
+%(1) BLEU assigns a much higher score to the identity function than to
+%the gold standard splits,
+We find that BLEU is often negatively correlated with simplicity, even
+when evaluating outputs without splitting, and that when evaluating outputs with splitting,
+it is less reliable than a simple measure of similarity to the source (\S\ref{sec:results}).
+Moreover, we show that BLEU cannot be adapted to assess sentence splitting,
+even where the reference set focuses on this operation (\S\ref{sec:splitting_refs}).
+%Second, we experiment on a setting where sentence splitting is the main simplification operation in both the outputs and the references. This setting is similar to that used in Split-and-Rephrase. 
+We conclude that BLEU is not informative and is often misleading for TS evaluation and for the related Split and Rephrase task.%, and that it should not be used for this purpose.
+
+
+
+
+%Computing the corpus-level correlation of the ranking of different TS systems and the gold standard,
+%we find that there is a negative correlation between BLEU and simplicity in all settings,
+%and that there is low or no correlation for grammaticality and meaning preservation
+%when sentence splitting is involved.
+
+
+% BLEU may serve as a measure for grammaticality and for meaning preservation
+%for purely lexical TS, but that
+%%even this can be partially explained by its role as a measure of distance from the source, rather than as
+%an evaluator of TS quality. Indeed, we find that the identity function obtains higher BLEU scores than the
+%gold standard splits.
+%Additionally, neither in general nor lexical TS does BLEU predict simplicity.
+
+%On the other hand, BLEU will be no longer correlated with human evaluation when huge $n$-gram changes still preserve the meaning and the grammaticality, as it may occur in cases of sentence splitting, investigated here.
+
+%we show that BLEU, for which we confirm its low correlation with human ratings for simplicity and extend the findings to structural simplicity, is not suitable for the evaluation of grammaticality and meaning preservation for the moment sentence splitting is involved.
+
+
+
+%We present related work in Section \ref{sec:related_work}. The new sentence splitting corpus is introduced in Section \ref{sec:corpus}. The correlation between BLEU and the edit distance to the input sentence is described in Section \ref{sec:distance_input}. The correlation analysis with human evaluation is presented in Section \ref{sec:correlation}.
+
+%COMPLETE
+%\vspace{-0.1cm}
+\section{Related Work} \label{sec:related_work}
+
+\paragraph{The BLEU Metric.}
+
+%proposed BLEU for MT evaluation as an alternative to human evaluation, which can be expensive and time consuming.
+BLEU \citep{P02} is reference-based, where the use of multiple references is used to address cross-reference variation.
+%allow word changes that do not modify the meaning. 
+To address changes in word order, BLEU uses $n$-gram precision, 
+modified to eliminate repetitions across the references. A brevity term penalizes overly short sentences. Formally:
+
+\vspace{-0.2cm}
+\begin{small}
+ $${\rm BLEU} = {\rm BP} \times {\rm exp}(\sum_{n=1}^{N} w_{n} {\rm log}(p_{n}))$$
+\end{small}
+\vspace{-0.3cm}
+
+where ${\rm BP}$ is the brevity penalty term, $p_n$ are the modified precisions, and $w_n$ are the corresponding weights,
+which are usually uniform in practice.
+
+The experiments of \citet{P02} showed that BLEU correlates with human judgments in the ranking of five English-to-Chinese MT systems and that it can distinguish human and machine translations. Although BLEU is widely used in MT, several works have pointed out its shortcomings \citep[e.g.,][]{KM06}. In particular, \citet{C06} showed that BLEU may not correlate in some cases with human judgments since a huge number of potential translations have the same BLEU score, and that correlation decreases when translation quality is low. Some of the reported shortcomings are relevant to monolingual translation, such as the impossibility to capture synonyms and paraphrases that are not in the reference set, or the uniform weighting of words. %(including function words).
+%We here show a shortcoming of BLEU, specific %and crucial%
+%to the text simplification task, showing that it is not adapted to the presence of sentence splitting in the output.
+
+%\vspace{-0.2cm}
+\paragraph{BLEU in TS.}
+While BLEU is standardly used for TS evaluation \citep[e.g.,][]{Xu16,Ni17,ZL17,MS17}, only few works tested its correlation with human judgments. Using 20 source sentences from the PWKP test corpus \citep{Z10} with 5 simplified sentences for each of them, \citet{W12} reported positive correlation of BLEU with simplicity ratings, but no correlation with adequacy.
+T-BLEU \citep{S14}, a variant of BLEU which uses lower n-grams when no overlapping 4-grams are found,
+was tested on outputs that applied only structural modifications to the source.
+It was found to have moderate positive correlation for meaning preservation, and positive but low correlation
+%who used 280 pairs of a source sentence and a simplified output with only , and 
+for grammaticality. Correlation with simplicity was not considered in this experiment.
+\citet{Xu16} focused on lexical simplification, finding that BLEU obtains reasonable correlation for grammaticality
+and meaning preservation but fails to capture simplicity, even when multiple references are used.
+To our knowledge, no previous work has examined the behavior of BLEU on sentence splitting, which we investigate here using a manually compiled gold standard.
+
+%on structural TS, or applied the metric to a manually compiled gold standard.
+%\paragraph{Corpora for Sentence Splitting}
+%\vspace{-0.2cm}
+\section{Gold-Standard Splitting Corpus} \label{sec:corpus}
+%\vspace{-0.1cm}
+In order to investigate the effect of correctly splitting sentences on the automatic metric scores, we build a parallel corpus, 
+where each sentence is modified by 4 annotators, according to specific sentence splitting guidelines.
+We use the complex side of the test corpus of \citet{Xu16}.\footnote{\url{https://github.com/cocoxu/simplification} includes the corpus, the SARI metric and the SBMT-SARI system. The corpus comprises 359 sentences.} %comprising 359 sentences. %, for which 8 references per sentence are available.
+
+While \citet{N17} recently proposed the semi-automatically compiled WEB-SPLIT dataset for training automatic sentence splitting systems, here we generate a completely manual corpus, without a-priori splitting points nor do we pre-suppose that all sentences should be split. This corpus enriches the set of references focused on lexical operations that were collected by \citet{Xu16} for the same source sentences and can also be used as an out-of-domain test set for Split-and-Rephrase \citep{N17}.
+
+We use two sets of guidelines.
+In Set 1, annotators are required to split the original as much as possible,
+while preserving the sentence's grammaticality, fluency and meaning.
+The guidelines include two sentence splitting examples.\footnote{Examples are taken from \citet{S06}.}
+In Set 2, annotators are encouraged to split only in cases where it simplifies the original sentence.
+That is, simplicity is implicit in Set 1 and explicit in Set 2. In both sets, the annotators are instructed to leave
+the source unchanged if splitting violates grammaticality,
+fluency or meaning preservation.\footnote{Examples are not provided in the case of Set 2 so as not to give an a-priori notion of simplicity. The complete guidelines are found in the supplementary material.} %\oa{do we have supp material?}
+
+Each set of guidelines is used by two annotators, with native or native-like proficiency in English.
+The obtained corpora are denoted by HSplit1, HSplit2 (for Set 1), and HSplit3 and HSplit4 (for Set 2), each containing 359 sentences. Table \ref{tab:corpus_stats} presents statistics for the corpora. Both in terms of the number of splits per sentence ($\#$ Sents) and in terms of the proportion of input sentences that have been split (SplitSents), we observe that the average difference within each set is significantly greater than the average difference between the sets.\footnote{Wilicoxon's signed rank test, $p = 1.6 \cdot 10^{-5}$ for $\#$Sents and $p = 0.002$ for SplitSents.}
+This suggests that the number of splits is less affected by the explicit mention of simplicity than by the inter-annotator variability. 
+
+%In Set 1, the two annotators are native English speakers. In Set2, the first annotator is a native English speaker and the second one is a professional editor working in English.
+
+%\vspace{-0.2cm}
+\begin{center}
+\begin{table}[h]
+\scriptsize
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+& {\bf $\#$ Sents} & {\bf SplitSents ($\%$)}\\
+\hline
+{\bf HSplit1} & 1.93 & 68\\
+\hline
+{\bf HSplit2 } & 2.28&  86\\
+\hline  
+{\bf HSplit3} & 1.87& 63\\
+\hline
+{\bf HSplit4} & 1.99& 71\\
+\hline
+{\bf HSplitAverage} &2.02  & 72\\
+\hline    
+\end{tabular}
+\end{center}
+\hfill
+%\vspace{-0.3cm}
+\caption{\small\label{tab:corpus_stats}Statistics for the sentence splitting benchmark. $\#$Sents denotes the average number of sentences in the output. SplitSents denotes the proportion of input sentences that have been split. %{\color{red} (average over what?)}. 
+The last row presents the average scores of the 4 HSplit corpora.}
+\label{tab:split_effect}
+\end{table}
+\end{center}
+
+%\vspace{-0.4cm}
+%\begin{center}
+%\begin{table}[h]
+%\scriptsize
+%\begin{center}
+%\begin{tabular}{|l|l|}
+%\hline
+%G & \parbox{0.75\linewidth}{Is the output fluent and grammatical?}\\
+%\hline
+%M & \parbox{0.75\linewidth}{Does the output preserve the meaning of the input?}\\
+%\hline
+%S &\parbox{0.75\linewidth}{Is the output simpler than the input?}\\
+%\hline
+%StS &\parbox{0.75\linewidth}{Is the output simpler than the input, ignoring the complexity of the words?}\\
+%\hline
+%\end{tabular}
+%\end{center}
+%\hfill
+%\vspace{-0.2cm}
+%\caption{\small\label{tab:hum_eval} Questions for eliciting human judgments.}
+%\label{questions} 
+%\end{table}
+%\end{center}
+%\section{The Effect of Sentence Splitting on BLEU scores} \label{sec:splitting_effect}
+%\vspace{-0.6cm}
+%\section{BLEU and the Distance to the Input} \label{sec:distance_input}
+%\vspace{-0.1cm}
+ %The Moses toolkit is used to perform uniform tokenization and true-casing.
+ 
+%Comparing the BLEU score on the input (the identity function) and on the HSplit corpora, we observe that the former yields much higher BLEU scores. Indeed, BLEU-1ref obtains 59.23 for the input and 45.68 for the HSplit corpora (averaged over the 4 HSplit corpora). BLEU-8ref obtains 94.93 for the input and 75.68 for HSplit. As HSplit preserves the meaning and the grammaticality of the input, this comparison suggests that BLEU negatively correlates with TS quality, a hypothesis we confirm in the next section.
+
+
+%\begin{center}
+%\begin{table*}[ht]
+%\scriptsize
+%\centering
+%\begin{tabular}{|c|c|c|c|c|c|c|c|}
+%\hline
+%& {\bf BLEU-1ref} & {\bf BLEU-8ref} & {\bf iBLEU-1ref} & {\bf iBLEU-8ref} & {\bf FKGL} & {\bf SARI-8ref}\\
+%\hline
+%{\bf Identity } & {\bf 59.23} & {\bf 94.93}  & {\bf 43.31} & {\bf 75.44} & 9.47 & 25.44\\
+%\hline
+%{\bf HSplit1} &47.62 &78.60  &35.05  &62.93  & 5.29 & 35.88\\
+%\hline
+%{\bf HSplit2 } &42.23 & 70.44 &31.06   &56.45   & {\bf 4.81}  &{\bf 36.87}\\
+%\hline  
+%{\bf HSplit3} &47.12 &78.15  &34.72  &62.65  &5.72 &35.61  \\
+%\hline
+%{\bf HSplit4} & 45.73 & 75.52 & 33.71 & 60.52 & 5.32 & 36.45 \\
+%\hline
+%{\bf HSplitAverage} &45.68 & 75.68 &33.63 & 60.64 & 5.29 & 36.20 \\
+%\hline    
+%\end{tabular}
+%\hfill
+%\caption{Automatic evaluation metrics Scores at the corpus level for the human sentence splitting outputs generated by the 4 annotators. The highest score in each column appears in bold. The average scores of the 4 annotator outputs are presented in the last row (HSplitAverage).}
+%\label{tab:split_effect}
+%\end{table*}
+%\end{center}
+%\vspace{-0.5cm}
+%\subsection{Metrics}
+%\vspace{-0.1cm}
+
+%We experiment on BLEU on two settings. The first one, called BLEU-1ref, uses the corresponding reference from Simple Wikipedia, according to the aligned PWKP parallel corpus \citep{Z10}. The second one, called BLEU-8ref makes use of the 8 crowdsourcing-based simplification references collected \citet{Xu16} for each of the original sentences.
+%BLEU scores are computed using the multi-bleu Moses\footnote{\url{http://www.statmt.org/moses/}} support tool.
+
+%We also compute iBLEU, proposed by \citet{SZ12} for paraphrase evaluation and recently also used for text simplification \citep{Xu16,Z17}. iBLEU takes into account, given an output $O$, both BLEU scores according to the input $I$ and to the references $R$. It is defined as:
+
+%\vspace{-0.2cm}
+%\begin{small}
+ %$${\rm iBLEU} = \alpha \times {\rm BLEU}(O,R) - (1 - \alpha) \times {\rm BLEU}(O,I)$$
+%\end{small}
+%In this case too, we use two settings, computing iBLEU with BLEU-1ref (defining iBLEU-1ref) and with BLEU-8ref (defining iBLEU-8ref) \footnote{We set $\alpha$ to 0.9 as empirically suggested by \citet{SZ12}}.
+
+%We also use the Flesch-Kincaid Grade Level (FK) \citep{K75}, which estimated the readability of the text using cognitively motivated features, with a lower value indicating higher readability.\footnote{We used FK implementation at \url{http://goo.gl/OHP7k3}.} It is defined as:
+
+%\vspace{-0.2cm}
+%\begin{small}
+%$$ {\rm FK} = 0.39 \times (\dfrac{\#words}{\#sentences}) + 11.8 \times (\dfrac{\#syllables}{\#words}) - 15.59$$
+%\end{small}
+%Finally, we experiment on SARI (System output Against References and against the Input sentence) \citep{Xu16}, used with 8 references. SARI compares the $n$-grams of the system output with those of the input and the human references, separately evaluating the quality of words that are added, deleted and kept by the systems. 
+
+%We apply the metrics on the 4 HSplit outputs as well as on the Identity output, which is identical to the source.
+%Before the application of the metrics, uniform tokenization and true-casing styles are obtained using the Moses toolkit.
+
+%\subsection{Results}
+
+%The results are presented in Table \ref{tab:split_effect}. We can see that in all the BLEU and iBLEU settings, the scores dramatically decrease, compared to the identity,  when sentence splitting is involved. For example, the BLEU-8ref score is 94.93 for the identity while it is in average 75.68 for HSplit.
+%These findings indicate that BLEU is not reliable in this case, even considering only the grammaticality and meaning preservation parameters. 
+%Differently, FK and SARI-8ref, which aim to capture simplicity, are more informative, as they increase when sentence splitting occurs.
+
+%\vspace{-0.2cm}
+
+\begin{center}
+\begin{table*}[ht]
+\scriptsize
+\centering
+\begin{tabular}{|c|c|c|c|c||c|c|c|c|}
+\hline
+& \multicolumn{4}{|c||}{{\bf Systems/Corpora without Splits}} & \multicolumn{4}{|c|}{{\bf All Systems/Corpora}}\\
+\hline
+&{\bf G} & {\bf M} & {\bf S} & {\bf StS} &{\bf G} & {\bf M} & {\bf S} & {\bf StS} \\
+\hline
+{\bf BLEU-1ref}& 0.43 (0.2) & 1.00 (0) & -0.81 (0.01) & -0.43 (0.2) & 0.11 (0.4) & 0.08 (0.4) & -0.60 (0.02) & -0.67 (0.008)  \\
+\hline   
+{\bf BLEU-8ref} & 0.61 (0.07) & 0.89 (0.003) & -0.59 (0.08) & -0.11 (0.4) & 0.26 (0.2) & 0.13 (0.3) & -0.42 (0.08) & -0.50 (0.05)\\
+\hline
+{\bf iBLEU-1ref} & 0.21 (0.3) & 0.93 (0.001) & -0.85 (0.008) & -0.61 (0.07) & 0.02 (0.5) & 0.07 (0.4) & -0.61 (0.02) & -0.71(0.004) \\
+\hline     
+{\bf iBLEU-8ref} &0.61 (0.07)& 0.89 (0.003) & -0.59 (0.08) & -0.11 (0.4) & 0.26 (0.2) & 0.13 (0.3) & -0.42 (0.08)& -0.50 (0.05) \\
+\hline
+{\bf -FK} & -0.21 (0.3) & -0.57 (0.09) & 0.67 (0.05)& 0.39 (0.2) & -0.05 (0.4) & -0.03 (0.5) & 0.51 (0.05)& 0.64 (0.01) \\
+\hline
+ {\bf SARI-8ref} & -0.64 (0.06)& -0.86 (0.007) & 0.52 (0.1)& 0.00 (0.5) & -0.64 (0.01)& -0.72 (0.004) & 0.26 (0.2)& -0.02 (0.5)\\
+\hline \hline
+{\bf -LD$_{SC}$} & 0.29 (0.3)& 0.86 (0.007)  & -0.88 (0.004) & -0.57 (0.09)& 0.21 (0.3)& 0.51 (0.04)& -0.68 (0.007) & -0.52 (0.04)\\
+\hline   
+\end{tabular}
+%\vspace{-0.1cm}
+\hfill
+%\vspace{-0.1cm}
+\caption{\small Spearman correlation (and $p$-values) at the system level between the rankings of automatic metrics and of human judgments for ``Standard Reference Setting''.
+%, where the system ranking predicted by automatic metrics is compared to that obtained by human evaluation.  
+Automatic metrics (rows) include BLEU and iBLEU (each used either with a single reference or with 8 references), the negative Flesh-Kincaid Grade Level (-FK), and SARI, computed with 8 references. We also include the negative Levenshtein distance between the output and the source (-LD$_{SC}$). Human judgments are of the Grammaticality (G), Meaning Preservation (M), Simplicity (S) and Structural Simplicity (StS) of the output.
+  The left-hand side reports correlations where only simplifications that do not include sentence splitting are considered. The right-hand side reports correlations where the HSplit 
+  corpora are evaluated as well (see text).
+  BLEU negatively correlates with S and StS in both cases, and shows little to no correlation with G and M where sentence splitting is involved.
+}
+\label{tab:correlation}
+\end{table*}
+\end{center}
+%\vspace{-0.1cm}
+
+\vspace{-1cm}
+\section{Experiments}\label{sec:correlation}
+
+%\vspace{-0.1cm}
+\subsection{Experimental Setup}\label{sec:systems}
+
+%\vspace{-0.1cm}
+\paragraph{Metrics.} \label{sec:metrics}
+In addition to BLEU,\footnote{System-level BLEU scores are computed using the multi-bleu Moses support tool. Sentence-level BLEU scores are computed using NLTK \citep{LB02}.} we also experiment with (1) iBLEU \citep{SZ12} which was recently used for TS \citep{Xu16,Z17} and
+which takes into account the BLEU scores of the output against the input and against the references;
+(2) the Flesch-Kincaid Grade Level \citep[FK;][]{K75}, computed at the system level, which estimates the readability of the text with a lower value
+indicating higher readability;\footnote{We thus computed the correlation in \S\ref{sec:results} for -FK.}  %It is defined as:
+(3) SARI \citep{Xu16}, which compares the $n$-grams of the system output with those of the input and the human references, separately evaluating the quality of words that are added, deleted and kept by the systems. 
+For completeness, we also experiment with the negative Levenshtein distance to the source (-LD$_{SC}$), which serves as a measure of conservatism.\footnote{LD$_{SC}$ is computed using NLTK.}
+
+%\vspace{-0.5cm}
+%\begin{small}
+%$$ {\rm FK} = 0.39 \times (\dfrac{\#words}{\#sentences}) + 11.8 \times (\dfrac{\#syllables}{\#words}) - 15.59$$
+%\end{small}
+%\vspace{-0.5cm}
+
+We explore two settings. In one (``Standard Reference Setting'', \S\ref{sec:results}), we use two sets of references: the Simple Wikipedia reference (yielding BLEU-1ref and iBLEU-1ref), and 8 references obtained by crowdsourcing by \citet{Xu16} (yielding BLEU-8ref, iBLEU-8ref and SARI-8ref). In the other (``HSplit as Reference Setting'', \S\ref{sec:splitting_refs}), we use HSplit as the reference set.
+
+
+\paragraph{Systems.} \label{sec:systems}
+For ``Standard Reference Setting'', we consider both a case where evaluated systems do not perform any splittings on the test set (``Systems/Corpora without Splits''), 
+and one where we evaluate these systems, along with the HSplit corpus, used in the role of system outputs (``All Systems/Corpora'').
+Systems include six MT-based simplification systems, including outputs of the state-of-the-art neural TS system of \citet{Ni17}, 
+ in four variants: either default settings or initialization by word2vec, for each both the highest and the fourth ranked hypotheses in the beam are considered.\footnote{Taking the fourth hypothesis rather than the first has been found to yield considerably less conservative TS systems.}
+We further include Moses \citep{K07}
+and SBMT-SARI \citep{Xu16}, a syntax-based MT system tuned against SARI, and the identity function (outputs are same as inputs). 
+The case which evaluates outputs with sentence splitting additionally includes the four HSplit corpora and the HSplit average scores.
+
+For ``HSplit as Reference Setting'', we consider the outputs of six simplification systems whose main simplification operation is sentence splitting: DSS, DSS$^{m}$, SEMoses, SEMoses$^{m}$, SEMoses$_{LM}$ and SEMoses$_{LM}^m$, taken from \citep{S18acl}. 
+
+
+
+%We here consider two sets of systems/corpora for isolating sentence splitting and testing the ability of BLEU to predict meaning preservation, independently from the structural changes: (a) the 6 systems described above and the identity function (); (b) the 6 systems, the identity function, the .
+
+
+%\citet{S10} and%
+ %It is here used with MGIZA\footnote{\url{ https://github.com/moses-smt/mgiza}}, the same training and tuning corpora as in NTS, and a KenLM language model trained on the target side of the training corpus.
+%(6) . %on the same corpus as the above systems, and using the PPDB corpus \citep{G13} for training.
+%\footnote{We here used the system output provided by \citet{Xu16}.}
+%(7) Reference, which includes for each input sentence the reference taken from PWKP.
+%We experiment with BLEU on two settings. The first one, called BLEU-1ref, uses the corresponding reference from Simple Wikipedia, according to the aligned PWKP parallel corpus \citep{Z10}. The second one, called BLEU-8ref makes use of the 8 crowdsourcing-based simplification references collected \citet{Xu16} for each of the original sentences.
+%BLEU scores are computed using the multi-bleu Moses\footnote{\url{http://www.statmt.org/moses/}} support tool.
+
+
+%We apply the metrics on the 4 HSplit outputs as well as on the Identity output, which is identical to the source.
+%Before the application of the metrics, uniform tokenization and true-casing styles are obtained using the Moses toolkit.
+%\vspace{-0.2cm}
+\paragraph{Human Evaluation.}\label{sec:human_evaluation}
+We use the evaluation benchmark provided by \citet{S18acl},\footnote{\url{https://github.com/eliorsulem/simplification-acl2018}} including system outputs and human evaluation scores corresponding to the first 70 sentences of the test corpus of \citet{Xu16}, and extend it to apply to HSplit as well.
+
+The evaluation of HSplit is carried out by 3 in-house native English annotators, 
+who rated the different input-output pairs for the different systems according to 4 parameters: Grammaticality (G), 
+Meaning preservation (M), Simplicity (S) and Structural Simplicity (StS). 
+%We here follow the experimental protocol used by \citet{S18acl}
+%in order to use the HSplit corpora and the output systems in the same setting, with a coherent evaluation. 
+%The elicitation questions are given in Table \ref{tab:hum_eval}.
+%Each input-output pair was rated by 3 annotators.
+%Two of the four annotators participated in compiling the sentence splitting corpus.
+%\footnote{All automatic systems and 3 of the
+%  HSplit corpora were rated by the same 3 annotators, out of which 2 did not participate in the corpus generation}. 
+G and M are measured using a 1 to 5 scale. A -2 to +2 scale is used for measuring simplicity and structural simplicity. %where a 0 score indicates that the input and the output are equally difficult. %Structural simplicity is also evaluated with a -2 to +2 scale. 
+%Following  \citet{S18acl}, the question for eliciting StS is accompanied by a negative example, showing a case of lexical simplification, where a complex word is replaced by a simple one. %(the other questions appeared without examples). 
+%A positive example is not included so as not to bias the annotators by revealing the nature of the operations we focus on
+%(splitting and deletion). 
+%We follow \citet{Ni17} in applying human evaluation on the first 70 sentences of the test corpus, not excluding system outputs identical to the source. The correlation analysis thus focuses on the first 70 sentences.
+%Since for some annotator pairs, the number of sentences annotated by both annotators is small,
+For computing the inter-annotator agreement of the whole benchmark (including the system outputs and the HSplit corpora), we follow \citet{PT16} and randomly select, for each sentence, one annotator's rating to be the rating of Annotator 1 and the rounded average rating of the two other annotators to be the rating of Annotator 2. We then compute weighted quadratic $\kappa$ \citep{C68} between Annotator 1 and 2. Repeating this process 1000 times, the obtained medians and 95$\%$ confidence intervals are 0.42 $\pm$ 0.002 for G, 0.77 $\pm$ 0.001 for M and 0.59 $\pm$ 0.002 for S and StS.
+
+%\vspace{-1cm}
+\subsection{Results with Standard Reference Setting} \label{sec:results}
+%\vspace{-0.1cm}
+
+\paragraph{Description of the Human Evaluation Scores.}
+
+The human evaluation scores for each parameter are obtained by averaging over the 3 annotators. The scores at the system level are obtained by averaging over the 70 sentences. In the "All systems/corpora" case of the "Standard Reference Setting", where 12 systems/corpora are considered, the range of the average G scores at the system level is from 3.71 to 4.80 ($\sigma$ = 0.29). For M, this max-min difference between the systems is 1.23 ($\sigma$=0.40). For S and StS, the differences are 0.53 ($\sigma$ = 0.17) and 0.65 ($\sigma$ = 0.20). At the sentence level, considering 840 sentences (70 for each of the system/corpora), the G and M scores vary from 1 to 5 ($\sigma$ equals 0.69 and 0.85 respectively), and the S and StS scores from -1 to 2 ($\sigma$ equals 0.53 and 0.50).
+
+In the "Systems/corpora without Splits" case of the "Standard Reference Setting", where 7 systems/corpora are considered, the max-min difference at the system level are again  1.09  ($\sigma$ = 0.36) and 1.23 ($\sigma$ = 0.47) for G and M respectively. For S and StS, the differences are 0.45 and 0.49 ($\sigma$ = 0.18). At the sentence level, considering 490 sentences (70 for each of the system/corpora), the G and M scores vary from 1 to 5 ($\sigma$ equals 0.78 and 1.01 respectively), and the S and StS scores from -1 to 2 ($\sigma$ equals 0.51 and 0.46).
+
+\paragraph{Comparing HSplit to Identity.}
+
+Comparing the BLEU score on the input (the identity function) and on the HSplit corpora, we observe that the former yields much higher BLEU scores. Indeed, BLEU-1ref obtains 59.85 for the input and 43.90 for the HSplit corpora (averaged over the 4 HSplit corpora). BLEU-8ref obtains 94.63 for the input and 73.03 for HSplit.\footnote{These scores concern the first 70 sentences of the corpus. A similar phenomenon is observed on the whole corpus (359 sentences). BLEU-1ref obtains 59.23 for the input and 45.68
+for HSplit. BLEU-8ref obtains 94.93 for the input and 75.68 for HSplit.} The high scores obtained for Identity, also observed by \citet{Xu16}, indicate that BLEU is a not a good predictor for relative simplicity to the input. The drop in the BLEU scores for HSplit is not reflected by the human evaluation scores for grammaticality (4.43 for AvgHSplit vs. 4.80 for Identity) and meaning preservation (4.70 vs. 5.00), where the decrease between Identity and HSplit is much more limited. For examining these tendencies in more detail, we compute the correlations between the automatic metrics and the human evaluation scores. They are described in the following paragraph.
+  
+\paragraph{Correlation with Human Evaluation.}
+The system-level Spearman correlations between the rankings of the automatic metrics and the human judgments
+(see \S\ref{sec:systems}) are presented in Table \ref{tab:correlation}.
+%\oa{the following should now move to exp setup}
+%We report correlation for the sets (a) and (b) described in 
+We find that in all cases BLEU and iBLEU negatively correlate with S and StS, indicating that they fail to capture simplicity and structural simplicity.
+Where gold standard splits are evaluated as well, 
+BLEU's and iBLEU's failure to capture StS is even more pronounced.
+Moreover, BLEU's correlation with G and M in this case disappears. In fact,
+BLEU's correlation with M in this case
+is considerably lower than that of -LD$_{SC}$ and its correlation with G is comparable, suggesting BLEU is 
+inadequate even as a measure of G and M if splitting is involved.
+
+We examine the possibility that BLEU mostly acts as a measure of conservatism,
+and compute the Spearman correlation between -LD$_{SC}$ and BLEU.
+The high correlations we obtain between the metrics indicate that this may be the case.
+Specifically, BLEU-1ref obtains correlations of 0.86 ($p= 7 \times 10^{-3}$) without splits and of 0.52 ($p=0.04$) where splitting is involved.
+%in the ``Systems/Corpora without Splits'' and ``All Systems/Corpora'' cases  %the without splits and all systems settings, %\oa{please check that I didn't swap them}%
+%respectively.
+BLEU-8ref obtains %correlations of%
+0.82 ($p=0.01$) and 0.55 ($p=0.03$).
+
+SARI obtains positive correlations with S, of 0.52 (without splits) and 0.26 (all systems/corpora),
+but correlates with StS in neither setting.
+This may stem from SARI's focus on 
+lexical, rather than structural TS. %which motivates%
+%motivating the development of tailored metrics
+%for structural TS.
+
+Similar trends are observed in the sentence-level correlation for S, StS and M, whereas G sometimes benefits in the sentence level from including HSplit in the evaluation. For G and M, the correlation with BLEU is lower than its correlation with -LD$_{SC}$ in both cases.
+
+
+%\vspace{-0.2cm}
+\begin{center}
+\begin{table}[h]
+\scriptsize
+\centering
+\setlength\tabcolsep{4pt}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+&{\bf G} & {\bf M} & {\bf S} & {\bf StS} \\
+\hline
+{\bf BLEU}& 0.36$^*$& 0.43$^*$ & 0.17 ($3 \cdot 10^{-4}$) &0.17  ($3 \cdot 10^{-4}$)   \\
+\hline   
+{\bf iBLEU} & 0.32$^*$ &0.40$^*$ & 0.15 ($8 \cdot 10^{-4}$) & 0.15 ($8 \cdot 10^{-4}$) \\
+\hline
+%{\bf -FK} & () &  () &  ()&  () \\
+%\hline
+{\bf SARI} & -0.05 (0.2)& -0.11 (0.02)  &  0.18 ($10^{-4}$) & 0.19 ($6 \cdot 10^{-5}$)\\
+\hline \hline
+{\bf -LD$_{SC}$} & 0.65$^*$ & 0.66$^*$ &0.21$^*$ & 0.20 ($10^{-5}$) \\
+\hline   
+\end{tabular}
+%\vspace{-0.2cm}
+\hfill
+%\vspace{-0.2cm}
+\caption{\small Sentence-level Spearman correlation (and $p$-values) between the automatic metrics and the human ratings for ``HSplit as Reference Setting''. $^*p<10^{-5}$.}  
+\label{tab:correlation_splitreferences}
+\end{table}
+\end{center}
+\vspace{-1cm}
+
+\subsection{Results with HSplit as Reference Setting}\label{sec:splitting_refs}
+
+%To do so, we take the 4 HSplit corpora as references, %\oa{move this to exp setup}
+%We expect that if BLEU's failure to capture simplicity and structural simplicity results from using references that focus on lexical
+%simplification, then BLEU should do better in the current setting.
+
+%Using the provided human evaluation scores, 
+We turn to examining whether BLEU may be adapted to address sentence splitting, if provided with references that include splittings.
+
+\paragraph{Description of the Human Evaluation Scores.}
+
+In the "HSplit as Reference Reference Setting", where 6 systems are considered, the max-min difference at the system level is 0.16 ($\sigma$ = 0.06) for G, 0.37 for M ($\sigma$ = 0.15), and 0.41 for S and StS ($\sigma$ equals 0.20 and 0.19 respectively). At the sentence level, considering 420 sentences (70 for each of the systems), the G and M scores vary from 1 to 5 ($\sigma$ equals 0.99 and 0.88 respectively), and the S and StS scores from -2 to 2 ($\sigma$ equals 0.63).
+
+\paragraph{Correlation with Human Evaluation.}
+
+On the system-level Spearman correlation between BLEU and human judgments, we
+find that while correlation with G is high (0.57, $p=0.1$), %BLEU does not significantly correlate with M%
+ it is low for M (0.11, $p= 0.4$),
+and negative for S (-0.70, $p= 0.06$) and StS (-0.60, $p = 0.1$). Sentence-level correlations of BLEU and iBLEU are positive,
+%\footnote{BLEU at the sentence-level with 4 references is computed using the NLTK toolkit.} 
+but they are lower than those obtained by LD$_{SC}$. See Table \ref{tab:correlation_splitreferences}. 
+
+To recap, results in this section demonstrate that even when evaluated against references that
+focus on sentence splitting, BLEU fails to capture the simplicity and structural simplicity of the output.
+
+%We also compute Spearman's correlations at the sentence level , presented in Table  BLEU here obtains positive correlations but it is outperformed, together with iBLEU and SARI, by - for all the parameters. %of 0.65 ($p<10^{-5}$) with G, 0.66 ($p<10^{-5}$) with M, 0.21 ($3*10^{-4}$) with S and 0.20 ($3*10^{-4}$) with StS. These correlations are all lower than those obtained by -LD$_{SC}$, which are 0.65 ($p<10^-5$), 0.66 ($p<10^{-5}$), 0.21 ($p< 10^{-5}$) and 0.20 ($p=10^{-5}$) with G, M, S and StS respectively.
+%In a second experiment, for each of the 4 HSplit corpora, we only consider the sentences that are split and that have at least one split reference (in the other HSplit corpora). This results in 210 output sentences, each having 1 to 3 split references (where only split references are used). 
+
+%Computing the sentence-level Spearman's correlation between the BLEU scores and the human ratings, we find that BLEU obtains correlations of 0.30 ($p < 10^{-5}$) with G, 0.33 ($p < 10^{-5}$) with M, 0.14 ($p = 0.02$) with S and StS. %So we obtain a low correlation with G and M and no correlation with S and StS.
+%That is, BLEU obtains low correlations with the human judgments, in particular with the simplicity parameters.
+
+%\vspace{-0.1cm}
+\section{Conclusion} \label{sec:conclusion}
+
+%\vspace{-0.1cm}
+In this paper we argued that BLEU is not suitable for TS evaluation, showing 
+that %(1) BLEU is high for the identity function but low for gold standard splits,
+(1) BLEU negatively correlates with simplicity,
+and that %(3) where splitting is involved,
+%it is less correlated with meaning preservation than the edit distance to the source, which requires no references.
+(2) even as a measure of grammaticality or meaning preservation it is
+comparable to, or worse than -LD$_{SC}$, which requires no references.
+Our findings suggest that BLEU should not be used for the evaluation of TS in general and sentence splitting in particular,
+and motivate the development of alternative methods for structural TS evaluation, such as \citep{S18naacl}.
+
+\section*{Acknowledgments}
+
+We would like to thank the annotators for participating in our generation and evaluation experiments.
+We also thank the anonymous reviewers for their helpful advices. This work was partially supported by the Intel Collaborative Research Institute for Computational Intelligence (ICRI-CI) and by the Israel Science Foundation
+(grant No. 929/17), as well as by the HUJI Cyber Security Research
+Center in conjunction with the Israel National Cyber
+Bureau in the Prime Minister's Office.
+\vspace{-0.5cm}
+
+\bibliographystyle{acl_natbib_nourl}
+\bibliography{bibliobleu}
+
+\end{document}
